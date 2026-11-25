@@ -9,6 +9,12 @@ const changeForm = document.querySelector("#change-form");
 const booking = document.querySelector("#booking");
 const availability = document.querySelector("#availability");
 const feedback = document.querySelector("#feedback");
+const paddockWarning = "Parece que você está querendo levar alguém que não tem acesso ao Paddock do Tito. Confira os nomes e tente de novo.";
+
+function setFeedback(message) {
+  feedback.classList.toggle("paddock-warning", message === paddockWarning);
+  feedback.textContent = message;
+}
 const receipt = document.querySelector("#receipt");
 const cancel = document.querySelector("#cancel");
 let code = location.hash.slice(1);
@@ -33,9 +39,9 @@ async function loadSlots() {
   } catch (error) {
     if (["guest_not_allowed", "guest_already_booked"].includes(error.message)) {
       showGroupForm();
-      feedback.textContent = error.message === "guest_not_allowed"
-        ? "Parece que você está querendo levar alguém que não é da família. Confira os nomes e tente de novo. 💚"
-        : "Cada pessoa deve aparecer uma única vez no grupo.";
+      setFeedback(error.message === "guest_not_allowed"
+        ? paddockWarning
+        : "Cada pessoa deve aparecer uma única vez no grupo.");
       return;
     }
     booking.hidden = true;
@@ -81,17 +87,17 @@ groupForm.elements.guests.addEventListener("change", () => {
 
 groupForm.addEventListener("submit", async event => {
   event.preventDefault();
-  feedback.textContent = "";
+  setFeedback("");
   const visitor = groupForm.elements.visitor.value.trim();
   const companions = [...companionFields.querySelectorAll("input")].map(input => input.value.trim());
   const keys = [visitor, ...companions].map(name => name.normalize("NFKD")
     .replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim());
   if (keys.some(key => !/^\p{L}[\p{L}\p{N}]*( \p{L}[\p{L}\p{N}]*)*$/u.test(key))) {
-    feedback.textContent = "Preencha o nome e o sobrenome de todas as pessoas.";
+    setFeedback("Preencha o nome e o sobrenome de todas as pessoas.");
     return;
   }
   if (new Set(keys).size !== keys.length) {
-    feedback.textContent = "Cada pessoa deve aparecer uma única vez no grupo.";
+    setFeedback("Cada pessoa deve aparecer uma única vez no grupo.");
     return;
   }
   group = { visitor, companions };
@@ -103,7 +109,7 @@ groupForm.addEventListener("submit", async event => {
 });
 
 editGroup.addEventListener("click", () => {
-  feedback.textContent = "";
+  setFeedback("");
   showGroupForm();
 });
 
@@ -111,7 +117,7 @@ booking.addEventListener("submit", async event => {
   event.preventDefault();
   const button = booking.querySelector("button");
   button.disabled = true;
-  feedback.textContent = "";
+  setFeedback("");
   editGroup.disabled = true;
   try {
     const [visit] = await rpc("reserve_slot", {
@@ -125,16 +131,16 @@ booking.addEventListener("submit", async event => {
   } catch (error) {
     if (error.message === "guest_already_booked" || error.message === "invalid_guest_names" || error.message === "guest_not_allowed") {
       showGroupForm();
-      feedback.textContent = error.message === "guest_already_booked"
+      setFeedback(error.message === "guest_already_booked"
         ? "Uma pessoa do grupo já tem visita reservada. Revise os nomes ou cancele a reserva anterior."
         : error.message === "guest_not_allowed"
-          ? "Parece que você está querendo levar alguém que não é da família. Confira os nomes e tente de novo. 💚"
-          : "Confira os nomes de todas as pessoas do grupo.";
+          ? paddockWarning
+          : "Confira os nomes de todas as pessoas do grupo.");
     } else if (error.message === "slot_unavailable") {
-      feedback.textContent = "Esse horário ficou indisponível. Escolha outro horário.";
+      setFeedback("Esse horário ficou indisponível. Escolha outro horário.");
       await loadSlots();
     } else {
-      feedback.textContent = "Não foi possível confirmar a visita. Tente novamente.";
+      setFeedback("Não foi possível confirmar a visita. Tente novamente.");
     }
   } finally {
     button.disabled = false;
@@ -165,7 +171,7 @@ document.querySelector("#calendar").addEventListener("click", async () => {
 document.querySelector("#change").addEventListener("click", async event => {
   const button = event.currentTarget;
   button.disabled = true;
-  feedback.textContent = "";
+  setFeedback("");
   changeForm.hidden = true;
   try {
     const slots = await rpc("reservation_visit_slots", { reservation_code: code });
@@ -178,10 +184,10 @@ document.querySelector("#change").addEventListener("click", async event => {
       changeForm.hidden = false;
       select.focus();
     } else {
-      feedback.textContent = "Nenhum outro horário está disponível no momento.";
+      setFeedback("Nenhum outro horário está disponível no momento.");
     }
   } catch {
-    feedback.textContent = "Não foi possível carregar os horários.";
+    setFeedback("Não foi possível carregar os horários.");
   } finally {
     button.disabled = false;
   }
@@ -197,9 +203,9 @@ changeForm.addEventListener("submit", async event => {
       reservation_code: code, requested_slot: Number(changeForm.elements.slot.value)
     });
     await showReceipt(visit);
-    feedback.textContent = "Horário atualizado. Seu link de reserva continua o mesmo.";
+    setFeedback("Horário atualizado. Seu link de reserva continua o mesmo.");
   } catch {
-    feedback.textContent = "Não foi possível trocar o horário. Consulte os horários novamente.";
+    setFeedback("Não foi possível trocar o horário. Consulte os horários novamente.");
   } finally {
     button.disabled = false;
     cancel.disabled = false;
@@ -214,10 +220,10 @@ cancel.addEventListener("click", async () => {
     receipt.hidden = true;
     code = "";
     history.replaceState(null, "", location.pathname + location.search);
-    feedback.textContent = cancelled ? "Visita cancelada." : "Esta reserva já está indisponível.";
+    setFeedback(cancelled ? "Visita cancelada." : "Esta reserva já está indisponível.");
     showGroupForm();
   } catch {
-    feedback.textContent = "Não foi possível cancelar. Tente novamente.";
+    setFeedback("Não foi possível cancelar. Tente novamente.");
   } finally {
     cancel.disabled = false;
   }
@@ -227,8 +233,8 @@ if (configured && /^[0-9a-f-]{36}$/i.test(code)) {
   try {
     const [visit] = await rpc("lookup_visit", { reservation_code: code });
     if (visit) await showReceipt(visit);
-    else feedback.textContent = "Esta reserva está indisponível.";
+    else setFeedback("Esta reserva está indisponível.");
   } catch {
-    feedback.textContent = "Não foi possível consultar esta reserva.";
+    setFeedback("Não foi possível consultar esta reserva.");
   }
 }
