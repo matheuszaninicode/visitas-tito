@@ -10,9 +10,9 @@ async function request(path, body, token) {
     headers,
     body: JSON.stringify(body)
   });
-  const data = await response.json();
+  const data = response.status === 204 ? null : await response.json();
   if (!response.ok) {
-    const error = new Error(data.message || data.msg || "Não foi possível concluir.");
+    const error = new Error(data?.message || data?.msg || "Não foi possível concluir.");
     error.status = response.status;
     throw error;
   }
