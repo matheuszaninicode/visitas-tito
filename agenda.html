@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Agenda da família · Tito</title>
+<link rel="stylesheet" href="style.css">
+<main>
+  <section>
+    <h1>Agenda da família</h1>
+    <p id="status" role="status"></p>
+    <form id="login">
+      <label>E-mail <input type="email" name="email" required autocomplete="username"></label>
+      <label>Senha <input type="password" name="password" required autocomplete="current-password"></label>
+      <button>Entrar</button>
+    </form>
+    <div id="panel" hidden>
+      <form id="day-form">
+        <label>Data das visitas <input name="day" type="date" required></label>
+        <button>Liberar horários</button>
+        <button type="button" id="close-day">Pausar novas reservas nesta data</button>
+      </form>
+      <h2>Cronograma de visitas</h2>
+      <ul id="schedule"></ul>
+      <button id="refresh">Atualizar cronograma</button>
+      <button id="logout">Sair</button>
+    </div>
+  </section>
+  <footer><a href="./">Voltar ao convite</a></footer>
+</main>
+<script type="module" src="agenda.js"></script>
+</html>

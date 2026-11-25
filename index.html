@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Grande Prêmio do Tito</title>
+<link rel="stylesheet" href="style.css">
+<main>
+  <header>
+    <img src="assets/tito.webp" alt="Ovelhinha piloto em um carro verde, com bandeira quadriculada e o nome Tito">
+    <div>
+      <h1>Grande Prêmio do Tito</h1>
+      <p>Vai ser muito especial receber vocês para conhecer o Tito!</p>
+      <p><strong>São Luiz Anália Franco</strong><br>Visitas de 30 minutos, com até 4 pessoas por horário.</p>
+    </div>
+  </header>
+  <section aria-labelledby="title">
+    <h2 id="title">Visitas à maternidade</h2>
+    <p id="availability" role="status">Carregando horários…</p>
+    <form id="booking" hidden>
+      <label>Horário disponível <select name="slot" required></select></label>
+      <label>Seu nome <input name="visitor" required maxlength="100" autocomplete="name"></label>
+      <label>Pessoas no grupo, incluindo você
+        <select name="guests"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+      </label>
+      <button>Confirmar visita</button>
+    </form>
+    <p id="feedback" role="status"></p>
+    <div id="receipt" hidden>
+      <p id="details"></p>
+      <p>Guarde o link da reserva para cancelar se precisar.</p>
+      <label>Link da reserva <input id="reservation-link" readonly></label>
+      <button id="cancel">Cancelar visita</button>
+    </div>
+  </section>
+  <footer><a href="agenda.html">Agenda da família</a></footer>
+</main>
+<script type="module" src="visit.js"></script>
+</html>
