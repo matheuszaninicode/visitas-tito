@@ -19,7 +19,7 @@ async function loadSlots() {
     return;
   }
   try {
-    const slots = await rpc("available_slots");
+    const slots = await rpc("invited_visit_slots", { visitor_name: group.visitor, companion_names: group.companions });
     const select = booking.elements.slot;
     const previous = select.value;
     select.replaceChildren(new Option("Escolha um horário", ""));
@@ -30,7 +30,14 @@ async function loadSlots() {
     booking.hidden = !slots.length;
     if (slots.length) select.focus();
     availability.textContent = slots.length ? "" : "Nenhum horário de visita disponível no momento.";
-  } catch {
+  } catch (error) {
+    if (["guest_not_allowed", "guest_already_booked"].includes(error.message)) {
+      showGroupForm();
+      feedback.textContent = error.message === "guest_not_allowed"
+        ? "Parece que você está querendo levar alguém que não é da família. Confira os nomes e tente de novo. 💚"
+        : "Cada pessoa deve aparecer uma única vez no grupo.";
+      return;
+    }
     booking.hidden = true;
     availability.textContent = "Não foi possível carregar os horários. Volte aos dados do grupo para tentar novamente.";
   }
@@ -79,7 +86,7 @@ groupForm.addEventListener("submit", async event => {
   const companions = [...companionFields.querySelectorAll("input")].map(input => input.value.trim());
   const keys = [visitor, ...companions].map(name => name.normalize("NFKD")
     .replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim());
-  if (keys.some(key => !/^\p{L}[\p{L}\p{N}]*( \p{L}[\p{L}\p{N}]*)+$/u.test(key))) {
+  if (keys.some(key => !/^\p{L}[\p{L}\p{N}]*( \p{L}[\p{L}\p{N}]*)*$/u.test(key))) {
     feedback.textContent = "Preencha o nome e o sobrenome de todas as pessoas.";
     return;
   }
@@ -92,7 +99,7 @@ groupForm.addEventListener("submit", async event => {
   groupForm.hidden = true;
   availability.textContent = "Carregando horários…";
   await loadSlots();
-  editGroup.hidden = false;
+  editGroup.hidden = !groupForm.hidden;
 });
 
 editGroup.addEventListener("click", () => {
@@ -116,11 +123,13 @@ booking.addEventListener("submit", async event => {
     history.replaceState(null, "", `#${code}`);
     await showReceipt(visit);
   } catch (error) {
-    if (error.message === "guest_already_booked" || error.message === "invalid_guest_names") {
+    if (error.message === "guest_already_booked" || error.message === "invalid_guest_names" || error.message === "guest_not_allowed") {
       showGroupForm();
       feedback.textContent = error.message === "guest_already_booked"
         ? "Uma pessoa do grupo já tem visita reservada. Revise os nomes ou cancele a reserva anterior."
-        : "Confira o nome e o sobrenome de todas as pessoas do grupo.";
+        : error.message === "guest_not_allowed"
+          ? "Parece que você está querendo levar alguém que não é da família. Confira os nomes e tente de novo. 💚"
+          : "Confira os nomes de todas as pessoas do grupo.";
     } else if (error.message === "slot_unavailable") {
       feedback.textContent = "Esse horário ficou indisponível. Escolha outro horário.";
       await loadSlots();
@@ -159,7 +168,7 @@ document.querySelector("#change").addEventListener("click", async event => {
   feedback.textContent = "";
   changeForm.hidden = true;
   try {
-    const slots = await rpc("available_slots");
+    const slots = await rpc("reservation_visit_slots", { reservation_code: code });
     const select = changeForm.elements.slot;
     select.replaceChildren(new Option("Escolha um horário", ""));
     for (const slot of slots) {
