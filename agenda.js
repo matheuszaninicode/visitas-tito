@@ -19,12 +19,17 @@ async function refresh() {
   if (!token) return;
   const activeToken = token;
   try {
-    const visits = await rpc("family_schedule", {}, activeToken);
+    const visits = await rpc("family_schedule_with_ids", {}, activeToken);
     if (token !== activeToken) return;
     const items = visits.map(visit => {
       const item = document.createElement("li");
       const names = [visit.visitor, ...(visit.companions || [])].join(", ");
       item.textContent = `${dateLabel(visit.day)} · ${visit.start_time.slice(0, 5)} · ${names} (${visit.guests})`;
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.textContent = "Cancelar visita";
+      cancel.addEventListener("click", () => cancelFamilyVisit(visit, cancel));
+      item.append(" ", cancel);
       return item;
     });
     if (!items.length) {
@@ -43,6 +48,25 @@ async function refresh() {
     } else {
       status.textContent = "Não foi possível atualizar o cronograma.";
     }
+  }
+}
+
+async function cancelFamilyVisit(visit, button) {
+  const when = `${dateLabel(visit.day)} às ${visit.start_time.slice(0, 5)}`;
+  if (!confirm(`Cancelar a visita de ${visit.visitor}, ${when}?`)) return;
+  button.disabled = true;
+  try {
+    const cancelled = await rpc("family_cancel_visit", {
+      booking_ref: visit.booking_ref, visit_day: visit.day, visit_time: visit.start_time
+    }, token);
+    status.textContent = cancelled
+      ? "Visita cancelada."
+      : "Essa reserva mudou ou já foi cancelada. Confira a agenda atualizada.";
+    await refresh();
+  } catch {
+    status.textContent = "Não foi possível cancelar a visita. Atualize a agenda e tente novamente.";
+  } finally {
+    button.disabled = false;
   }
 }
 
