@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="style.css">
 <main>
   <header>
-    <img src="assets/tito.webp" alt="Ovelhinha piloto em um carro verde, com bandeira quadriculada e o nome Tito">
+    <img src="assets/tito-pista.webp" alt="Carneirinho piloto no carro verde número 95, cruzando a linha de chegada">
     <div>
       <h1>Grande Prêmio do Tito</h1>
       <p>Vai ser muito especial receber vocês para conhecer o Tito!</p>
@@ -16,15 +16,21 @@
   </header>
   <section aria-labelledby="title">
     <h2 id="title">Visitas à maternidade</h2>
-    <p id="availability" role="status">Carregando horários…</p>
-    <form id="booking" hidden>
-      <label>Horário disponível <select name="slot" required></select></label>
-      <label>Seu nome <input name="visitor" required maxlength="100" autocomplete="name"></label>
+    <form id="group-form">
+      <label>Seu nome e sobrenome <input name="visitor" required maxlength="100" autocomplete="name"></label>
       <label>Pessoas no grupo, incluindo você
         <select name="guests"><option>1</option><option>2</option><option>3</option><option>4</option></select>
       </label>
+      <div id="companions"></div>
+      <button>Ver horários disponíveis</button>
+    </form>
+    <p id="availability" role="status"></p>
+    <form id="booking" hidden>
+      <p id="group-summary"></p>
+      <label>Horário disponível <select name="slot" required></select></label>
       <button>Confirmar visita</button>
     </form>
+    <button type="button" id="edit-group" hidden>Editar dados do grupo</button>
     <p id="feedback" role="status"></p>
     <div id="receipt" hidden>
       <p id="details"></p>
@@ -35,5 +41,5 @@
   </section>
   <footer><a href="agenda.html">Agenda da família</a></footer>
 </main>
-<script type="module" src="visit.js"></script>
+<script type="module" src="visit.js?v=2"></script>
 </html>

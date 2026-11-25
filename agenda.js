@@ -23,7 +23,8 @@ async function refresh() {
     if (token !== activeToken) return;
     const items = visits.map(visit => {
       const item = document.createElement("li");
-      item.textContent = `${dateLabel(visit.day)} · ${visit.start_time.slice(0, 5)} · ${visit.visitor} (${visit.guests})`;
+      const names = [visit.visitor, ...(visit.companions || [])].join(", ");
+      item.textContent = `${dateLabel(visit.day)} · ${visit.start_time.slice(0, 5)} · ${names} (${visit.guests})`;
       return item;
     });
     if (!items.length) {

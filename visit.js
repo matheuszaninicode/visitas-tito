@@ -1,5 +1,9 @@
 import { configured, dateLabel, rpc } from "./api.js";
 
+const groupForm = document.querySelector("#group-form");
+const companionFields = document.querySelector("#companions");
+const editGroup = document.querySelector("#edit-group");
+let group;
 const booking = document.querySelector("#booking");
 const availability = document.querySelector("#availability");
 const feedback = document.querySelector("#feedback");
@@ -21,43 +25,107 @@ async function loadSlots() {
       select.add(new Option(`${dateLabel(slot.day)} · ${slot.start_time.slice(0, 5)}`, slot.slot_id));
     }
     if ([...select.options].some(option => option.value === previous)) select.value = previous;
-    booking.hidden = !slots.length || !receipt.hidden;
+    booking.hidden = !slots.length;
+    if (slots.length) select.focus();
     availability.textContent = slots.length ? "" : "Nenhum horário de visita disponível no momento.";
   } catch {
     booking.hidden = true;
-    availability.textContent = "Não foi possível carregar os horários. Recarregue a página para tentar novamente.";
+    availability.textContent = "Não foi possível carregar os horários. Volte aos dados do grupo para tentar novamente.";
   }
 }
 
 async function showReceipt(visit) {
   booking.hidden = true;
+  groupForm.hidden = true;
+  editGroup.hidden = true;
+  availability.textContent = "";
   receipt.hidden = false;
   document.querySelector("#details").textContent =
     `Visita confirmada para ${dateLabel(visit.day)}, às ${visit.start_time.slice(0, 5)}. Grupo de ${visit.guests}.`;
   document.querySelector("#reservation-link").value = location.href;
 }
 
+function showGroupForm() {
+  booking.hidden = true;
+  editGroup.hidden = true;
+  groupForm.hidden = false;
+  availability.textContent = "";
+  groupForm.elements.visitor.focus();
+}
+
+groupForm.elements.guests.addEventListener("change", () => {
+  const count = Number(groupForm.elements.guests.value) - 1;
+  while (companionFields.children.length > count) companionFields.lastElementChild.remove();
+  for (let index = companionFields.children.length; index < count; index++) {
+    const label = document.createElement("label");
+    label.textContent = `Nome e sobrenome do acompanhante ${index + 1}`;
+    const input = document.createElement("input");
+    input.name = "companion";
+    input.required = true;
+    input.maxLength = 100;
+    label.append(input);
+    companionFields.append(label);
+  }
+});
+
+groupForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  feedback.textContent = "";
+  const visitor = groupForm.elements.visitor.value.trim();
+  const companions = [...companionFields.querySelectorAll("input")].map(input => input.value.trim());
+  const keys = [visitor, ...companions].map(name => name.normalize("NFKD")
+    .replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim());
+  if (keys.some(key => !/^\p{L}[\p{L}\p{N}]*( \p{L}[\p{L}\p{N}]*)+$/u.test(key))) {
+    feedback.textContent = "Preencha o nome e o sobrenome de todas as pessoas.";
+    return;
+  }
+  if (new Set(keys).size !== keys.length) {
+    feedback.textContent = "Cada pessoa deve aparecer uma única vez no grupo.";
+    return;
+  }
+  group = { visitor, companions };
+  document.querySelector("#group-summary").textContent = [visitor, ...companions].join(", ");
+  groupForm.hidden = true;
+  availability.textContent = "Carregando horários…";
+  await loadSlots();
+  editGroup.hidden = false;
+});
+
+editGroup.addEventListener("click", () => {
+  feedback.textContent = "";
+  showGroupForm();
+});
+
 booking.addEventListener("submit", async event => {
   event.preventDefault();
   const button = booking.querySelector("button");
   button.disabled = true;
   feedback.textContent = "";
+  editGroup.disabled = true;
   try {
     const [visit] = await rpc("reserve_slot", {
       requested_slot: Number(booking.elements.slot.value),
-      visitor_name: booking.elements.visitor.value.trim(),
-      group_size: Number(booking.elements.guests.value)
+      visitor_name: group.visitor,
+      companion_names: group.companions
     });
     code = visit.cancel_code;
     history.replaceState(null, "", `#${code}`);
     await showReceipt(visit);
   } catch (error) {
-    feedback.textContent = error.message === "slot_unavailable"
-      ? "Esse horário ficou indisponível. Escolha outro horário."
-      : "Não foi possível confirmar a visita. Confira os dados e tente novamente.";
-    await loadSlots();
+    if (error.message === "guest_already_booked" || error.message === "invalid_guest_names") {
+      showGroupForm();
+      feedback.textContent = error.message === "guest_already_booked"
+        ? "Uma pessoa do grupo já tem visita reservada. Revise os nomes ou cancele a reserva anterior."
+        : "Confira o nome e o sobrenome de todas as pessoas do grupo.";
+    } else if (error.message === "slot_unavailable") {
+      feedback.textContent = "Esse horário ficou indisponível. Escolha outro horário.";
+      await loadSlots();
+    } else {
+      feedback.textContent = "Não foi possível confirmar a visita. Tente novamente.";
+    }
   } finally {
     button.disabled = false;
+    editGroup.disabled = false;
   }
 });
 
@@ -70,7 +138,7 @@ cancel.addEventListener("click", async () => {
     code = "";
     history.replaceState(null, "", location.pathname + location.search);
     feedback.textContent = cancelled ? "Visita cancelada." : "Esta reserva já está indisponível.";
-    await loadSlots();
+    showGroupForm();
   } catch {
     feedback.textContent = "Não foi possível cancelar. Tente novamente.";
   } finally {
@@ -87,4 +155,3 @@ if (configured && /^[0-9a-f-]{36}$/i.test(code)) {
     feedback.textContent = "Não foi possível consultar esta reserva.";
   }
 }
-await loadSlots();

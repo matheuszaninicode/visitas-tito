@@ -3,7 +3,7 @@ organização visitas tito
 
 ## Ativação
 
-1. Em um projeto Supabase dedicado, execute `supabase/setup.sql` no SQL Editor uma vez.
+1. Em um projeto Supabase dedicado, execute `supabase/setup.sql` e depois `supabase/group-booking.sql` no SQL Editor uma vez.
 2. Em Authentication → Users, crie as duas contas da família. Autorize apenas seus IDs:
    `insert into tito_private.family (user_id) values ('UUID_1'), ('UUID_2');`
 3. Em `config.js`, informe a URL do projeto e a chave **publishable**. Mantenha senhas, chaves secretas e dados de visitantes fora do repositório.
