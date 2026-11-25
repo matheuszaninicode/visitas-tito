@@ -4,6 +4,8 @@ const groupForm = document.querySelector("#group-form");
 const companionFields = document.querySelector("#companions");
 const editGroup = document.querySelector("#edit-group");
 let group;
+let currentVisit;
+const changeForm = document.querySelector("#change-form");
 const booking = document.querySelector("#booking");
 const availability = document.querySelector("#availability");
 const feedback = document.querySelector("#feedback");
@@ -35,6 +37,8 @@ async function loadSlots() {
 }
 
 async function showReceipt(visit) {
+  currentVisit = visit;
+  changeForm.hidden = true;
   booking.hidden = true;
   groupForm.hidden = true;
   editGroup.hidden = true;
@@ -126,6 +130,70 @@ booking.addEventListener("submit", async event => {
   } finally {
     button.disabled = false;
     editGroup.disabled = false;
+  }
+});
+
+document.querySelector("#calendar").addEventListener("click", async () => {
+  const start = new Date(`${currentVisit.day}T${currentVisit.start_time}-03:00`);
+  const end = new Date(start.getTime() + 30 * 60 * 1000);
+  const stamp = date => date.toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code));
+  const calendarId = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+  const content = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Grande Premio do Tito//Visitas//PT",
+    "BEGIN:VEVENT", `UID:${calendarId}@visitas-tito`, `DTSTAMP:${stamp(new Date())}`,
+    `DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`,
+    "SUMMARY:Visita ao Tito", "LOCATION:São Luiz Anália Franco", "END:VEVENT", "END:VCALENDAR", ""
+  ].join("\r\n");
+  const href = URL.createObjectURL(new Blob([content], { type: "text/calendar;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = "visita-ao-tito.ics";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(href), 1000);
+});
+
+document.querySelector("#change").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  feedback.textContent = "";
+  changeForm.hidden = true;
+  try {
+    const slots = await rpc("available_slots");
+    const select = changeForm.elements.slot;
+    select.replaceChildren(new Option("Escolha um horário", ""));
+    for (const slot of slots) {
+      select.add(new Option(`${dateLabel(slot.day)} · ${slot.start_time.slice(0, 5)}`, slot.slot_id));
+    }
+    if (slots.length) {
+      changeForm.hidden = false;
+      select.focus();
+    } else {
+      feedback.textContent = "Nenhum outro horário está disponível no momento.";
+    }
+  } catch {
+    feedback.textContent = "Não foi possível carregar os horários.";
+  } finally {
+    button.disabled = false;
+  }
+});
+
+changeForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = changeForm.querySelector("button");
+  button.disabled = true;
+  cancel.disabled = true;
+  try {
+    const [visit] = await rpc("reschedule_visit", {
+      reservation_code: code, requested_slot: Number(changeForm.elements.slot.value)
+    });
+    await showReceipt(visit);
+    feedback.textContent = "Horário atualizado. Seu link de reserva continua o mesmo.";
+  } catch {
+    feedback.textContent = "Não foi possível trocar o horário. Consulte os horários novamente.";
+  } finally {
+    button.disabled = false;
+    cancel.disabled = false;
   }
 });
 

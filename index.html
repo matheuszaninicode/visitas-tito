@@ -36,10 +36,16 @@
       <p id="details"></p>
       <p>Guarde o link da reserva para cancelar se precisar.</p>
       <label>Link da reserva <input id="reservation-link" readonly></label>
+      <button type="button" id="calendar">Adicionar ao calendário</button>
+      <button type="button" id="change">Trocar horário</button>
+      <form id="change-form" hidden>
+        <label>Novo horário <select name="slot" required></select></label>
+        <button>Confirmar novo horário</button>
+      </form>
       <button id="cancel">Cancelar visita</button>
     </div>
   </section>
   <footer><a href="agenda.html">Agenda da família</a></footer>
 </main>
-<script type="module" src="visit.js?v=2"></script>
+<script type="module" src="visit.js?v=3"></script>
 </html>
