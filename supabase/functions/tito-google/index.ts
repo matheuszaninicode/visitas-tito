@@ -20,7 +20,8 @@ async function rpc(name: string, params: Record<string, string>) {
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error("Database operation failed");
-  return res.json();
+  const body = await res.text();
+  return body ? JSON.parse(body) : null;
 }
 
 Deno.serve(async req => {
