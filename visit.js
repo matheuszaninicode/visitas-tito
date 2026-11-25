@@ -60,6 +60,7 @@ async function showReceipt(visit) {
   document.querySelector("#details").textContent =
     `Visita confirmada para ${dateLabel(visit.day)}, às ${visit.start_time.slice(0, 5)}. Grupo de ${visit.guests}.`;
   document.querySelector("#reservation-link").value = location.href;
+  document.querySelector("#link-feedback").textContent = "";
 }
 
 function showGroupForm() {
@@ -145,6 +146,32 @@ booking.addEventListener("submit", async event => {
   } finally {
     button.disabled = false;
     editGroup.disabled = false;
+  }
+});
+
+const reservationLink = document.querySelector("#reservation-link");
+const linkFeedback = document.querySelector("#link-feedback");
+const shareReservation = document.querySelector("#share-reservation");
+
+document.querySelector("#copy-reservation").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(reservationLink.value);
+    linkFeedback.textContent = "Link copiado!";
+  } catch {
+    reservationLink.focus();
+    reservationLink.select();
+    linkFeedback.textContent = "O link está selecionado. Use a opção Copiar do seu aparelho.";
+  }
+});
+
+shareReservation.hidden = typeof navigator.share !== "function";
+shareReservation.addEventListener("click", async () => {
+  try {
+    await navigator.share({ title: "Reserva de visita ao Tito", url: reservationLink.value });
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      linkFeedback.textContent = "Use Copiar link para compartilhar a reserva.";
+    }
   }
 });
 
