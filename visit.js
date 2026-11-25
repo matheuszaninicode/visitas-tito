@@ -4,7 +4,6 @@ const groupForm = document.querySelector("#group-form");
 const companionFields = document.querySelector("#companions");
 const editGroup = document.querySelector("#edit-group");
 let group;
-let currentVisit;
 const changeForm = document.querySelector("#change-form");
 const booking = document.querySelector("#booking");
 const availability = document.querySelector("#availability");
@@ -50,7 +49,6 @@ async function loadSlots() {
 }
 
 async function showReceipt(visit) {
-  currentVisit = visit;
   changeForm.hidden = true;
   booking.hidden = true;
   groupForm.hidden = true;
@@ -58,7 +56,7 @@ async function showReceipt(visit) {
   availability.textContent = "";
   receipt.hidden = false;
   document.querySelector("#details").textContent =
-    `Visita confirmada para ${dateLabel(visit.day)}, às ${visit.start_time.slice(0, 5)}. Grupo de ${visit.guests}.`;
+    `Sua visita foi confirmada para: ${dateLabel(visit.day)}, às ${visit.start_time.slice(0, 5)}.`;
   document.querySelector("#reservation-link").value = location.href;
   document.querySelector("#link-feedback").textContent = "";
 }
@@ -167,32 +165,15 @@ document.querySelector("#copy-reservation").addEventListener("click", async () =
 shareReservation.hidden = typeof navigator.share !== "function";
 shareReservation.addEventListener("click", async () => {
   try {
-    await navigator.share({ title: "Reserva de visita ao Tito", url: reservationLink.value });
+    const text = ["#paddock-confirmation", "#arrival-instructions", "#start-engines", "#details"]
+      .map(selector => document.querySelector(selector).textContent)
+      .join("\n\n");
+    await navigator.share({ text, url: reservationLink.value });
   } catch (error) {
     if (error.name !== "AbortError") {
       linkFeedback.textContent = "Use Copiar link para compartilhar a reserva.";
     }
   }
-});
-
-document.querySelector("#calendar").addEventListener("click", async () => {
-  const start = new Date(`${currentVisit.day}T${currentVisit.start_time}-03:00`);
-  const end = new Date(start.getTime() + 30 * 60 * 1000);
-  const stamp = date => date.toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code));
-  const calendarId = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
-  const content = [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Grande Premio do Tito//Visitas//PT",
-    "BEGIN:VEVENT", `UID:${calendarId}@visitas-tito`, `DTSTAMP:${stamp(new Date())}`,
-    `DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`,
-    "SUMMARY:Visita ao Tito", "LOCATION:São Luiz Anália Franco", "END:VEVENT", "END:VCALENDAR", ""
-  ].join("\r\n");
-  const href = URL.createObjectURL(new Blob([content], { type: "text/calendar;charset=utf-8" }));
-  const link = document.createElement("a");
-  link.href = href;
-  link.download = "visita-ao-tito.ics";
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(href), 1000);
 });
 
 document.querySelector("#change").addEventListener("click", async event => {

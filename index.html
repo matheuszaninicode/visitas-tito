@@ -56,13 +56,14 @@
     <button type="button" id="edit-group" hidden>Editar dados do grupo</button>
     <p id="feedback" role="status"></p>
     <div id="receipt" hidden>
+      <h3 id="paddock-confirmation">Acesso ao Paddock do Tito liberado!</h3>
+      <p id="arrival-instructions">Ao chegar ao São Luiz, dirijam-se à recepção e aguardem. Recomendamos chegar 10 minutos antes do horário agendado.</p>
+      <p id="start-engines"><strong>Preparem os motores!</strong></p>
       <p id="details"></p>
-      <p>Guarde o link da reserva para cancelar se precisar.</p>
       <label>Link da reserva <input id="reservation-link" readonly></label>
       <button type="button" id="copy-reservation">Copiar link</button>
       <button type="button" id="share-reservation" hidden>Compartilhar link</button>
       <p id="link-feedback" role="status"></p>
-      <button type="button" id="calendar">Adicionar ao calendário</button>
       <button type="button" id="change">Trocar horário</button>
       <form id="change-form" hidden>
         <label>Novo horário <select name="slot" required></select></label>
@@ -73,5 +74,5 @@
   </section>
   <footer><a href="agenda.html">Agenda da família</a> · <a href="privacidade.html">Privacidade</a> · <a href="termos.html">Termos</a></footer>
 </main>
-<script type="module" src="visit.js?v=6"></script>
+<script type="module" src="visit.js?v=7"></script>
 </html>
