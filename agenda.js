@@ -87,6 +87,31 @@ document.querySelector("#logout").addEventListener("click", () => {
   clearSession();
   status.textContent = "";
 });
+document.querySelector("#connect-google").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const state = await rpc("tito_google_begin", {}, token);
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.search = new URLSearchParams({
+      client_id: "712915809457-mltu2vl3ahr96dq82o8b35vfjo9ujfoq.apps.googleusercontent.com",
+      redirect_uri: "https://hlhlwkxobecoelnvylvy.supabase.co/functions/v1/tito-google/oauth/callback",
+      response_type: "code",
+      scope: "openid email https://www.googleapis.com/auth/calendar.app.created https://www.googleapis.com/auth/gmail.send",
+      access_type: "offline",
+      prompt: "consent select_account",
+      state
+    });
+    location.assign(url.href);
+  } catch {
+    status.textContent = "Não foi possível abrir a conexão com o Google. Entre novamente e tente outra vez.";
+    button.disabled = false;
+  }
+});
+if (new URLSearchParams(location.search).get("google") === "connected") {
+  status.textContent = "Conta Google conectada. O envio automático ainda depende da ativação da integração.";
+  history.replaceState(null, "", location.pathname);
+}
 if (configured) {
   await refresh();
   setInterval(refresh, 15000);
