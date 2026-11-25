@@ -47,7 +47,8 @@ async function processJobs(workerKey: string, secret: string) {
   const headers = { Authorization: "Bearer " + access_token, "Content-Type": "application/json" };
   const resource = "https://www.googleapis.com/calendar/v3/calendars/" +
     encodeURIComponent(connection.calendar_id) + "/events";
-  const eventId = "tito" + String(job.booking_id).replace(/-/g, "");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(job.booking_id));
+  const eventId = "tito" + Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
   const hour = job.start_time.slice(0, 5);
   const start = job.day + "T" + hour + ":00-03:00";
   const end = new Date(Date.parse(start) + 1800000).toISOString();
